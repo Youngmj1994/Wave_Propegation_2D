@@ -3,7 +3,11 @@
 #include "olcPixelGameEngine.h"
 
 #include <algorithm>
-#include <set>
+#include <vector>
+#include <queue>
+#include <iostream>
+#include <tuple>
+
 
 /*
 1. create a 2d array space and init it wth the appropriate x,y, and d values.
@@ -76,21 +80,6 @@ public:
 		}
 	}
 
-	void drawConnections()
-	{
-		//draw connections
-
-		for (int x = 0; x < mapWidth; x++)
-		{
-			for (int y = 0; y < mapHeight; y++)
-			{
-				for (auto n : nodesVec)
-				{
-					DrawLine(x * nodeSize + nodeSize / 2, y * nodeSize + nodeSize / 2, n->x * nodeSize + nodeSize / 2, n->y * nodeSize + nodeSize / 2, olc::GREY);
-				}
-			}
-		}
-	}
 
 	void wave_prop()
 	{
@@ -157,10 +146,73 @@ public:
 
 	void drawLine()
 	{
-		//int endX = endNode->x, endY = endNode->y;
-		//int startX = startNode->x, startY = startNode->y;
+		
+		//check n,e,s,w's bigd and if its not -1 add it to the path list. then find the min of the path list until you eventually reach the starting node or there is no path
+		int startX = startNode->x, startY = startNode->y; int currX = startX, currY = startY;
+		std::list<std::pair<int, int>> pathList;
+		pathList.push_back({ startX, startY });
+		std::vector<std::pair<int, int>> truePath;
+		bool pathExists = true;
+		int minNum = 99999, tempx = 0,tempy = 0;
+		if (startNode->BigD > 0) {
+			do
+			{
+				//north
+				if ((currY - 1) >= 0 && nodesVec[convert2dto1d(currX, currY - 1)]->BigD > 0)
+				{
+					pathList.push_back({ currX, currY - 1 });
+				}
+				//east
+				if ((currX + 1) < mapWidth && nodesVec[convert2dto1d(currX + 1, currY)]->BigD > 0)
+				{
+					pathList.push_back({ currX + 1, currY });
+				}
+				//south
+				if ((currY + 1) < mapHeight && nodesVec[convert2dto1d(currX, currY + 1)]->BigD > 0)
+				{
+					pathList.push_back({ currX, currY + 1 });
+				}
+				//west
+				if ((currX - 1) >= 0 && nodesVec[convert2dto1d(currX - 1, currY)]->BigD > 0)
+				{
+					pathList.push_back({ currX - 1, currY });
+				}
 
-						
+				if (pathList.empty()) //if no path can be found come out of the while loop
+				{
+					pathExists = false;
+				}
+				else
+				{
+					pathList.sort();
+					for (auto n : pathList)
+					{
+						int comparatorNum = nodesVec[convert2dto1d(n.first, n.second)]->BigD;
+						if (minNum > comparatorNum)
+						{
+							minNum = nodesVec[convert2dto1d(n.first, n.second)]->BigD;
+							tempx = n.first;
+							tempy = n.second;
+						}
+					}
+					currX = tempx;
+					currY = tempy;
+					truePath.push_back({ currX,currY });
+					pathList.clear();
+				}
+			} while (pathExists && (currX != endNode->x || currY != endNode->y));
+
+			if (pathExists) {
+				int tempX = startNode->x, tempY = startNode->y;
+				
+				for (auto b : truePath)
+				{
+					DrawLine(tempX * nodeSize + ((nodeSize) / 2), tempY * nodeSize + ((nodeSize) / 2), b.first * nodeSize + ((nodeSize) / 2), b.second * nodeSize + ((nodeSize) / 2), olc::YELLOW);
+					tempX = b.first;
+					tempY = b.second;
+				}
+			}
+		}
 	}
 
 	bool OnUserCreate() override
@@ -185,7 +237,7 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
-						
+		Clear(olc::BLACK);
 		olc::vd2d vMouse = { (double)GetMouseX() / nodeSize, (double)GetMouseY() / nodeSize };
 
 		if (GetMouse(0).bPressed) // Use mouse to draw maze, shift and ctrl to place start and end
@@ -208,11 +260,12 @@ public:
 		}
 
 		drawNodes();
+		drawLine();
 
 		for (auto n : nodesVec)
 			DrawString(n->x * nodeSize, n->y * nodeSize, std::to_string(n->BigD), olc::VERY_DARK_YELLOW);
 
-		//drawLine();
+		
 
 		return true;
 	}
