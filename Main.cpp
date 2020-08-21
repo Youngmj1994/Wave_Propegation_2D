@@ -58,6 +58,7 @@ public:
 	Node* endNode = nullptr;
 	const int nodeSize = 32;
 	const int mapWidth = 15, mapHeight = 15;
+	int wave = 1;
 
 	void drawNodes()
 	{
@@ -74,8 +75,8 @@ public:
 				if (nodesVec[convert2dto1d(x, y)] == endNode)
 					FillRect(x * nodeSize, y * nodeSize, 28, 28, olc::RED);
 
-
-
+				if (nodesVec[convert2dto1d(x, y)]->BigD == wave)
+					FillRect(x * nodeSize, y * nodeSize, 28, 28, olc::DARK_MAGENTA);
 			}
 		}
 	}
@@ -184,7 +185,7 @@ public:
 				}
 				else
 				{
-					pathList.sort();
+					//pathList.sort();
 					for (auto n : pathList)
 					{
 						int comparatorNum = nodesVec[convert2dto1d(n.first, n.second)]->BigD;
@@ -253,12 +254,22 @@ public:
 						nodesVec[convert2dto1d(vMouse.x, vMouse.y)]->BigD = 0;
 					else
 						nodesVec[convert2dto1d(vMouse.x, vMouse.y)]->BigD = -1;
-
+					
 					wave_prop();
 				}
 			}
 		}
-
+		
+		if (GetKey(olc::Q).bPressed)
+		{
+			wave++;
+		}
+		if (GetKey(olc::A).bPressed)
+		{
+			wave--;
+			if (wave < 1)
+				wave = 1;
+		}
 		drawNodes();
 		drawLine();
 
